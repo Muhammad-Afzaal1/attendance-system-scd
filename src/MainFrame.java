@@ -1,43 +1,70 @@
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 
 public class MainFrame extends JFrame {
 
-    AttendanceManager manager = new AttendanceManager();
+    private AttendanceManager manager = new AttendanceManager();
 
-    JTextField rollField = new JTextField(10);
-    JTextField nameField = new JTextField(10);
+    private JTextField rollField = new JTextField(10);
+    private JTextField nameField = new JTextField(10);
 
-    JButton addButton = new JButton("Add Student");
+    private JButton addButton = new JButton("Add Student");
 
-    DefaultListModel<String> model = new DefaultListModel<>();
-    JList<String> studentList = new JList<>(model);
-
-    JButton presentButton = new JButton("Present");
-    JButton absentButton = new JButton("Absent");
+    private DefaultTableModel tableModel;
+    private JTable table;
 
     public MainFrame() {
 
         setTitle("Attendance System");
-        setSize(500,400);
+        setSize(700, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLayout(new FlowLayout());
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout());
 
-        add(new JLabel("Roll No"));
-        add(rollField);
+        JPanel topPanel = new JPanel();
 
-        add(new JLabel("Name"));
-        add(nameField);
+        topPanel.add(new JLabel("Roll No"));
+        topPanel.add(rollField);
 
-        add(addButton);
-        add(presentButton);
-        add(absentButton);
+        topPanel.add(new JLabel("Name"));
+        topPanel.add(nameField);
 
-        add(new JScrollPane(studentList));
+        topPanel.add(addButton);
+
+        add(topPanel, BorderLayout.NORTH);
+
+        String[] columns = {
+                "Roll No",
+                "Name",
+                "Attendance"
+        };
+
+        tableModel = new DefaultTableModel(columns, 0) {
+
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 2;
+            }
+        };
+
+        table = new JTable(tableModel);
+
+        table.setRowHeight(35);
+
+        table.getColumn("Attendance")
+                .setCellRenderer(new ButtonRenderer());
+
+        table.getColumn("Attendance")
+                .setCellEditor(
+                        new ButtonEditor(
+                                new JCheckBox(),
+                                table,
+                                manager));
+
+        add(new JScrollPane(table), BorderLayout.CENTER);
 
         addButton.addActionListener(e -> addStudent());
-        presentButton.addActionListener(e -> markPresent());
-        absentButton.addActionListener(e -> markAbsent());
 
         setVisible(true);
     }
@@ -49,7 +76,7 @@ public class MainFrame extends JFrame {
             String roll = rollField.getText().trim();
             String name = nameField.getText().trim();
 
-            if(roll.isEmpty() || name.isEmpty()) {
+            if (roll.isEmpty() || name.isEmpty()) {
                 throw new IllegalArgumentException(
                         "All fields are required");
             }
@@ -58,7 +85,11 @@ public class MainFrame extends JFrame {
 
             manager.addStudent(student);
 
-            model.addElement(student.toString());
+            tableModel.addRow(new Object[]{
+                    student.getRollNo(),
+                    student.getName(),
+                    "Present"
+            });
 
             rollField.setText("");
             nameField.setText("");
@@ -78,30 +109,6 @@ public class MainFrame extends JFrame {
                     "Unexpected Error",
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    private void markPresent() {
-
-        int index = studentList.getSelectedIndex();
-
-        if(index >= 0) {
-            manager.markAttendance(index, true);
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Marked Present");
-        }
-    }
-    private void markAbsent() {
-
-        int index = studentList.getSelectedIndex();
-
-        if(index >= 0) {
-            manager.markAttendance(index, false);
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Marked Absent");
         }
     }
 }
